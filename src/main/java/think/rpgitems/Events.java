@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -42,6 +43,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
@@ -234,7 +236,6 @@ public class Events implements Listener {
         String locale = Locale.getPlayerLocale(e.getPlayer());
         if (ItemManager.toRPGItem(item) != null) {
             RPGItem.updateItem(item, locale);
-            e.getItem().setItemStack(item);
         }
     }
 
@@ -411,5 +412,50 @@ public class Events implements Listener {
             damage = playerHit(e, damage);
         }
         e.setDamage(damage);
+    }
+
+    // Vanilla wears armour down for these causes without an entity being involved, so onDamage never sees them.
+    // MONITOR so that WorldGuard (HIGH) and friends have already cancelled the hit. The server fires this event on
+    // every tick (cactus) even when the invulnerability window swallows the damage, so only count hits that land.
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEnvironmentDamage(EntityDamageEvent e) {
+        if (e instanceof EntityDamageByEntityEvent || !(e.getEntity() instanceof Player))
+            return;
+        switch (e.getCause()) {
+        case CONTACT:
+        case FIRE:
+        case LAVA:
+        case BLOCK_EXPLOSION:
+            break;
+        default:
+            return;
+        }
+        Player p = (Player) e.getEntity();
+        if (e.getDamage() <= 0 || p.getGameMode() == GameMode.CREATIVE)
+            return;
+        if (p.getNoDamageTicks() > p.getMaximumNoDamageTicks() / 2f && e.getDamage() <= p.getLastDamage())
+            return;
+        String locale = Locale.getPlayerLocale(p);
+        ItemStack[] armour = p.getInventory().getArmorContents();
+        boolean worn = false;
+        for (int i = 0; i < armour.length; i++) {
+            ItemStack pArmour = armour[i];
+            RPGItem pRItem = ItemManager.toRPGItem(pArmour);
+            if (pRItem == null || pRItem.getMaxDurability() == -1)
+                continue;
+            RPGMetadata meta = RPGItem.getMetadata(pArmour);
+            int durability = meta.containsKey(RPGMetadata.DURABILITY) ? ((Number) meta.get(RPGMetadata.DURABILITY)).intValue() : pRItem.getMaxDurability();
+            durability--;
+            if (durability <= 0) {
+                armour[i] = null;
+            }
+            meta.put(RPGMetadata.DURABILITY, Integer.valueOf(durability));
+            RPGItem.updateItem(pArmour, locale, meta);
+            worn = true;
+        }
+        if (worn) {
+            p.getInventory().setArmorContents(armour);
+            p.updateInventory();
+        }
     }
 }

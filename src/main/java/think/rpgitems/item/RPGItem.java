@@ -103,6 +103,7 @@ public class RPGItem {
         this.id = id;
         encodedID = getMCEncodedID(id);
         item = new ItemStack(Material.WOOD_SWORD);
+        hasBar = item.getType().getMaxDurability() != 0;
 
         displayName = item.getType().toString();
         
@@ -402,6 +403,11 @@ public class RPGItem {
                 rpgMeta.put(RPGMetadata.DURABILITY, Integer.valueOf(maxDurability));
             }
             int durability = ((Number) rpgMeta.get(RPGMetadata.DURABILITY)).intValue();
+            if (durability > maxDurability) {
+                // The max was lowered after this item was made, so the old remaining durability would outlast the new max
+                durability = maxDurability;
+                rpgMeta.put(RPGMetadata.DURABILITY, Integer.valueOf(durability));
+            }
 
             if (!hasBar || forceBar) {
                 StringBuilder out = new StringBuilder();
@@ -708,6 +714,16 @@ public class RPGItem {
             maxDurability = mat.getMaxDurability();
         }
         item.setType(mat);
+        hasBar = mat.getMaxDurability() != 0;
+        // The stored metas are typed per material (leather armour carries a colour), so they go stale when the material changes
+        ItemMeta fresh = new ItemStack(mat).getItemMeta();
+        if (fresh != null) {
+            for (Entry<String, ItemMeta> entry : localeMeta.entrySet()) {
+                if (entry.getValue().getClass() != fresh.getClass()) {
+                    entry.setValue(fresh.clone());
+                }
+            }
+        }
         if (update)
             rebuild();
     }
