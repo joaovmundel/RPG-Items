@@ -29,7 +29,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>2.0</version>
+        <version>3.5.3</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -64,6 +64,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.8</version>
         <executions>
           <execution>
             <id>copy</id>
@@ -83,26 +84,14 @@
   </build>
   <repositories>
     <repository>
-      <id>bukkit-repo</id>
-      <url>http://repo.bukkit.org/content/groups/public/</url>
-    </repository>
-    <repository>
       <id>Plugin Metrics</id>
-      <url>http://repo.mcstats.org/content/repositories/public</url>
+      <url>https://maven.elmakers.com/repository</url>
     </repository>
     <repository>
-      <id>sk89q-repo</id>
-      <url>http://maven.sk89q.com/repo/</url>
+      <id>enginehub-repo</id>
+      <url>https://maven.enginehub.org/repo/</url>
     </repository>
   </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <snapshots />
-      <id>autoincrement-versions-maven-plugin</id>
-      <name>autoincrement-versions-maven-plugin</name>
-      <url>http://autoincrement-versions-maven-plugin.googlecode.com/svn/repo</url>
-    </pluginRepository>
-  </pluginRepositories>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -124,8 +113,7 @@
     </dependency>
   </dependencies>
   <properties>
-    <project_version>3.3</project_version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project_version>3.3</project_version>
   </properties>
 </project>
-
